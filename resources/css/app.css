@@ -1,0 +1,12 @@
+.table-card .position-absolute {
+    z-index: 10;
+}
+
+.table-card .position-absolute:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+
+.dashboard-button {
+        height: 125px;
+}

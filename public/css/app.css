@@ -1,0 +1,23 @@
+.dashboard-button {
+        height: 125px;
+}
+
+.mb {
+        margin-bottom: 30px;
+}
+
+.dashboard-button-cafe {
+        height: 100px;
+}
+
+.color-white{
+        color: white!important;
+}
+
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+.dropdown-menu-left{
+        left: -63px!important;
+}
