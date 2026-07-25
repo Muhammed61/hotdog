@@ -1,64 +1,189 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# Kafe Stok Takip
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Kafe operasyonlarini tek panelden yonetmek icin gelistirilmis Laravel tabanli bir stok, satis, masa, siparis ve raporlama uygulamasi.
 
-## About Laravel
+Bu proje; stok yonetimi, depo hareketleri, cafe siparis sureci, parcali odeme, kasa takibi, kullanici rolleri ve raporlama ihtiyaclarini tek sistemde toplar.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Baslica Ozellikler
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Rol bazli giris ve yetkilendirme
+- Kafe masa ve siparis yonetimi
+- Adisyon, parcali odeme ve odeme kapatma akisi
+- Stok, urun ve kategori yonetimi
+- Depo giris hareketleri ve stok raporlari
+- Kasa hareketleri ve nakit takibi
+- Gunluk, stok, cafe ve kullanici aktivite raporlari
+- Sistem ayarlari ve temel gorev takibi
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Roller
 
-## Learning Laravel
+Sistemde su roller bulunur:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- `admin`
+- `manager`
+- `waiter`
+- `cashier`
+- `warehouse_manager`
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Her rol kendi yetki alanina uygun ekrana yonlendirilir ve sadece izin verilen modullere erisebilir.
 
-## Laravel Sponsors
+## Teknoloji Yigini
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+- PHP
+- Laravel 8
+- MySQL
+- Blade
+- Laravel Mix
+- JavaScript
+- Bootstrap tabanli arayuz yapisi
 
-### Premium Partners
+## Kurulum
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+### Gereksinimler
 
-## Contributing
+- PHP 8.0+
+- Composer
+- Node.js ve npm
+- MySQL veya uyumlu bir veritabani
+- XAMPP benzeri yerel gelistirme ortami
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 1. Projeyi klonla
 
-## Code of Conduct
+```bash
+git clone https://github.com/Muhammed61/cafe-stok-takip.git
+cd cafe-stok-takip
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 2. PHP bagimliliklarini kur
 
-## Security Vulnerabilities
+```bash
+composer install
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 3. Ortam dosyasini hazirla
 
-## License
+```bash
+copy .env.example .env
+php artisan key:generate
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Ardindan `.env` dosyasi icinde veritabani ve diger ortam ayarlarini guncelle.
+
+### 4. Veritabanini hazirla
+
+```bash
+php artisan migrate --seed
+```
+
+### 5. On yuz bagimliliklarini kur
+
+```bash
+npm install
+npm run dev
+```
+
+### 6. Uygulamayi calistir
+
+```bash
+php artisan serve
+```
+
+Tarayicida su adresi ac:
+
+```text
+http://127.0.0.1:8000
+```
+
+## Varsayilan Kullanicilar
+
+Seed islemi sonrasinda test amacli varsayilan kullanicilar olusur:
+
+- `admin@cafe.com` / `123456`
+- `manager@cafe.com` / `123456`
+- `garson@cafe.com` / `123456`
+- `kasiyer@cafe.com` / `123456`
+- `depo@cafe.com` / `123456`
+
+Ilk kurulumdan sonra bu sifrelerin degistirilmesi onerilir.
+
+## Proje Modulleri
+
+### Kafe Yonetimi
+
+- Masa bazli siparis olusturma
+- Siparis durum guncelleme
+- Urun arama ve ekleme
+- Siparis tasima ve birlestirme
+- Adisyon yazdirma
+- Parcali odeme ve odeme iptal akislari
+
+### Stok ve Depo
+
+- Urun ve kategori yonetimi
+- Manuel stok giris ve cikis hareketleri
+- Depo urun kaydi
+- Dusuk stok takibi
+- Stok hareket raporlari
+
+### Kasa ve Raporlama
+
+- Kasa giris ve cikis hareketleri
+- Satis raporlari
+- Cafe gelir raporlari
+- Kar ve hareket raporlari
+- Kullanici aktivite kayitlari
+
+## Gelistirme Komutlari
+
+```bash
+php artisan serve
+php artisan migrate
+php artisan db:seed
+npm run dev
+npm run watch
+```
+
+## GitHub Calisma Duzeni
+
+Bu repo icin commit ve surumleme kurallari tanimlanmistir:
+
+- Commit kurallari: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- Surum gecmisi: [CHANGELOG.md](./CHANGELOG.md)
+- Guncel uygulama surumu: [VERSION](./VERSION)
+- Commit sablonu: [.gitmessage.txt](./.gitmessage.txt)
+
+Onerilen ilk ayar:
+
+```bash
+git config commit.template .gitmessage.txt
+```
+
+## Surumleme Yaklasimi
+
+Bu proje `Semantic Versioning` mantigiyla surumlenir:
+
+- `MAJOR`: Geriye donuk uyumsuz degisiklik
+- `MINOR`: Geriye uyumlu yeni ozellik
+- `PATCH`: Hata duzeltmesi ve kucuk iyilestirme
+
+Yeni surum yayinlanmadan once:
+
+1. `CHANGELOG.md` guncellenir.
+2. `VERSION` dosyasi guncellenir.
+3. `chore(release): vX.Y.Z` commit'i atilir.
+4. Git etiketi olusturulur.
+
+## Guvenlik
+
+- `.env` dosyasi repoya dahil edilmez.
+- Gercek API anahtarlari, sifreler ve gizli bilgiler sadece ortam degiskenlerinde tutulmalidir.
+- Uretim ortaminda varsayilan kullanici sifreleri kullanilmamalidir.
+
+## Repo Durumu
+
+- Repo durumu: `private`
+- Ana branch: `main`
+
+## Not
+
+Bu repo aktif gelistirme altindadir. Yeni ozellikler, duzeltmeler ve surum notlari icin ilgili dokumanlari takip et.

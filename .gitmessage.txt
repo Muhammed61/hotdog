@@ -1,0 +1,11 @@
+# type(scope): kisa aciklama
+#
+# Neden:
+# - Bu degisiklik hangi ihtiyaci cozer
+#
+# Ne degisti:
+# - Yapilan ana degisiklikler
+#
+# Kontrol:
+# - Test edildi mi
+# - Manuel kontrol yapildi mi
