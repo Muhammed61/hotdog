@@ -43,6 +43,46 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="mt-3">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                <button class="btn btn-dark btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#excluded-tables-panel" aria-expanded="false" aria-controls="excluded-tables-panel">
+                                    <i class="fas fa-filter me-1"></i>Aramada Hariç Tutulacak Masalar
+                                </button>
+                                <div class="small fw-semibold text-dark" id="excluded-tables-summary">
+                                    Hariç tutulan masa yok
+                                </div>
+                            </div>
+                            <div class="collapse" id="excluded-tables-panel">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body py-3">
+                                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                            <small class="text-muted">
+                                                Seçtiğin masalar ürün aramasında gösterilmez.
+                                            </small>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="clear-excluded-tables">
+                                                Temizle
+                                            </button>
+                                        </div>
+                                        <div class="excluded-tables-list">
+                                            @foreach($tables as $table)
+                                                <div class="form-check excluded-table-item">
+                                                    <input
+                                                        class="form-check-input exclude-table-checkbox"
+                                                        type="checkbox"
+                                                        value="{{ $table->id }}"
+                                                        id="exclude-table-{{ $table->id }}"
+                                                        data-table-name="{{ $table->name }}"
+                                                    >
+                                                    <label class="form-check-label" for="exclude-table-{{ $table->id }}">
+                                                        {{ $table->name }}
+                                                    </label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -261,6 +301,20 @@
     filter: brightness(0.95);
     color: #fff !important;
 }
+
+.excluded-tables-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.5rem 1rem;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.excluded-table-item {
+    background: rgba(255, 255, 255, 0.65);
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.75rem;
+}
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -268,7 +322,121 @@ document.addEventListener('DOMContentLoaded', function() {
     const productSearchInput = document.getElementById('product-search');
     const searchResults = document.getElementById('search-results');
     const searchResultsContent = document.getElementById('search-results-content');
+    const excludedTablesSummary = document.getElementById('excluded-tables-summary');
+    const excludedTableCheckboxes = document.querySelectorAll('.exclude-table-checkbox');
+    const clearExcludedTablesButton = document.getElementById('clear-excluded-tables');
+    const excludedTablesStorageKey = 'cafe-search-excluded-tables';
     let searchTimeout;
+
+    function getExcludedTableIds() {
+        return Array.from(excludedTableCheckboxes)
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => checkbox.value);
+    }
+
+    function saveExcludedTables() {
+        localStorage.setItem(excludedTablesStorageKey, JSON.stringify(getExcludedTableIds()));
+    }
+
+    function updateExcludedTablesSummary() {
+        const selectedCheckboxes = Array.from(excludedTableCheckboxes).filter(checkbox => checkbox.checked);
+
+        if (selectedCheckboxes.length === 0) {
+            excludedTablesSummary.textContent = 'Hariç tutulan masa yok';
+            return;
+        }
+
+        const selectedNames = selectedCheckboxes.map(checkbox => checkbox.dataset.tableName);
+        excludedTablesSummary.textContent = `${selectedCheckboxes.length} masa hariç: ${selectedNames.join(', ')}`;
+    }
+
+    function loadExcludedTables() {
+        const savedValue = localStorage.getItem(excludedTablesStorageKey);
+
+        if (!savedValue) {
+            updateExcludedTablesSummary();
+            return;
+        }
+
+        let savedTableIds = [];
+
+        try {
+            savedTableIds = JSON.parse(savedValue);
+        } catch (error) {
+            localStorage.removeItem(excludedTablesStorageKey);
+        }
+
+        excludedTableCheckboxes.forEach(checkbox => {
+            checkbox.checked = savedTableIds.includes(checkbox.value);
+        });
+
+        updateExcludedTablesSummary();
+    }
+
+    function renderSearchResults(data) {
+        if (data.length === 0) {
+            searchResultsContent.innerHTML = '<div class="p-3 text-center text-muted">Ürün bulunamadı</div>';
+            searchResults.style.display = 'block';
+            return;
+        }
+
+        let html = '<div class="list-group list-group-flush">';
+        data.forEach(product => {
+            if (product.tables.length > 0) {
+                product.tables.forEach(table => {
+                    html += `
+                        <a href="{{ url('cafe/order') }}/${table.order_id}" class="list-group-item list-group-item-action" style="cursor: pointer; border-left: 4px solid var(--bs-${table.status_color});">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">${product.name}</h6>
+                                    <small class="text-muted">Fiyat: ${product.price} TL</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-${table.status_color}" style="font-size: 0.9rem;">
+                                        ${table.name} (${table.quantity} adet - ${table.status})
+                                    </span>
+                                </div>
+                            </div>
+                        </a>`;
+                });
+            } else {
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">${product.name}</h6>
+                                <small class="text-muted">Fiyat: ${product.price} TL</small>
+                            </div>
+                        </div>
+                        <div class="mt-2"><small class="text-warning"><i class="fas fa-info-circle me-1"></i>Şu anda hiçbir masada sipariş edilmemiş</small></div>
+                    </div>`;
+            }
+        });
+
+        searchResultsContent.innerHTML = html;
+        searchResults.style.display = 'block';
+    }
+
+    function performProductSearch(query) {
+        const params = new URLSearchParams({
+            query: query
+        });
+
+        getExcludedTableIds().forEach(tableId => {
+            params.append('exclude_tables[]', tableId);
+        });
+
+        fetch(`{{ route('cafe.search.product') }}?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                renderSearchResults(data);
+            })
+            .catch(error => {
+                console.error('Arama hatası:', error);
+                searchResultsContent.innerHTML = '<div class="p-3 text-center text-danger">Arama sırasında bir hata oluştu</div>';
+                searchResults.style.display = 'block';
+            });
+    }
 
     if (productSearchInput) {
         productSearchInput.addEventListener('input', function() {
@@ -281,58 +449,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             searchTimeout = setTimeout(function() {
-                fetch(`{{ route('cafe.search.product') }}?query=${encodeURIComponent(query)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.length === 0) {
-                            searchResultsContent.innerHTML = '<div class="p-3 text-center text-muted">Ürün bulunamadı</div>';
-                            searchResults.style.display = 'block';
-                            return;
-                        }
-
-                        let html = '<div class="list-group list-group-flush">';
-                        data.forEach(product => {
-                            if (product.tables.length > 0) {
-                                // Her masa için ayrı satır oluştur
-                                product.tables.forEach(table => {
-                                    html += `
-                                        <a href="{{ url('cafe/order') }}/${table.order_id}" class="list-group-item list-group-item-action" style="cursor: pointer; border-left: 4px solid var(--bs-${table.status_color});">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div class="flex-grow-1">
-                                                    <h6 class="mb-1">${product.name}</h6>
-                                                    <small class="text-muted">Fiyat: ${product.price} TL</small>
-                                                </div>
-                                                <div class="text-end">
-                                                    <span class="badge bg-${table.status_color}" style="font-size: 0.9rem;">
-                                                        ${table.name} (${table.quantity} adet - ${table.status})
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </a>`;
-                                });
-                            } else {
-                                // Sipariş edilmemiş ürün
-                                html += `
-                                    <div class="list-group-item">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-1">${product.name}</h6>
-                                                <small class="text-muted">Fiyat: ${product.price} TL</small>
-                                            </div>
-                                        </div>
-                                        <div class="mt-2"><small class="text-warning"><i class="fas fa-info-circle me-1"></i>Şu anda hiçbir masada sipariş edilmemiş</small></div>
-                                    </div>`;
-                            }
-                        });
-
-                        searchResultsContent.innerHTML = html;
-                        searchResults.style.display = 'block';
-                    })
-                    .catch(error => {
-                        console.error('Arama hatası:', error);
-                        searchResultsContent.innerHTML = '<div class="p-3 text-center text-danger">Arama sırasında bir hata oluştu</div>';
-                        searchResults.style.display = 'block';
-                    });
+                performProductSearch(query);
             }, 300);
         });
 
@@ -343,6 +460,37 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    excludedTableCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            saveExcludedTables();
+            updateExcludedTablesSummary();
+
+            const activeQuery = productSearchInput ? productSearchInput.value.trim() : '';
+            if (activeQuery.length >= 2) {
+                performProductSearch(activeQuery);
+            }
+        });
+    });
+
+    if (clearExcludedTablesButton) {
+        clearExcludedTablesButton.addEventListener('click', function() {
+            excludedTableCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+
+            saveExcludedTables();
+            updateExcludedTablesSummary();
+
+            const activeQuery = productSearchInput ? productSearchInput.value.trim() : '';
+            if (activeQuery.length >= 2) {
+                performProductSearch(activeQuery);
+            }
+        });
+    }
+
+    loadExcludedTables();
+
     // Tüm dropdown butonlarını seç
     const dropdownButtons = document.querySelectorAll('[data-bs-toggle="dropdown"]');
     

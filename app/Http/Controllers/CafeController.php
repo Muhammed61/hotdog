@@ -2285,12 +2285,18 @@ class CafeController extends Controller
     public function searchProduct(Request $request)
     {
         $query = $request->input('query');
+        $excludedTableIds = collect($request->input('exclude_tables', []))
+            ->filter(fn ($tableId) => is_numeric($tableId))
+            ->map(fn ($tableId) => (int) $tableId)
+            ->unique()
+            ->values()
+            ->all();
         
         if (empty($query) || strlen($query) < 2) {
             return response()->json([]);
         }
 
-        // Ürünleri ara
+        // ï¿½rï¿½nleri ara
         $products = Product::where('is_active', true)
             ->where('name', 'LIKE', '%' . $query . '%')
             ->limit(10)
@@ -2299,11 +2305,15 @@ class CafeController extends Controller
         $results = [];
 
         foreach ($products as $product) {
-            // Bu ürünün hangi masalarda sipariþ edildiðini bul (ödenmemiþ sipariþler)
+            // Bu ï¿½rï¿½nï¿½n hangi masalarda sipariï¿½ edildiï¿½ini bul (ï¿½denmemiï¿½ sipariï¿½ler)
             $orderItems = CafeOrderItem::where('product_id', $product->id)
-                ->whereHas('cafeOrder', function($q) {
+                ->whereHas('cafeOrder', function($q) use ($excludedTableIds) {
                     $q->where('is_paid', false)
                       ->whereNotIn('status', [CafeOrder::STATUS_CANCELLED]);
+
+                    if (!empty($excludedTableIds)) {
+                        $q->whereNotIn('table_id', $excludedTableIds);
+                    }
                 })
                 ->with(['cafeOrder.table'])
                 ->get();
