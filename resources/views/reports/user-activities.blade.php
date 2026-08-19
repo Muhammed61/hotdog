@@ -575,7 +575,16 @@
 function changePerPage(value) {
     const url = new URL(window.location);
     url.searchParams.set('per_page', value);
-    url.searchParams.delete('page'); // Sayfa numarasını sıfırla
+    url.searchParams.delete('page'); // Detaylı liste sayfasını sıfırla
+    url.searchParams.delete('stats_page'); // İstatistik sayfasını koru
+    window.location.href = url.toString();
+}
+
+function changeStatsPerPage(value) {
+    const url = new URL(window.location);
+    url.searchParams.set('stats_per_page', value);
+    url.searchParams.delete('stats_page'); // İstatistik sayfasını sıfırla
+    url.searchParams.delete('page'); // Detaylı liste sayfasını koru
     window.location.href = url.toString();
 }
 

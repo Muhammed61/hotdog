@@ -827,20 +827,38 @@ class ReportController extends Controller
             fputcsv($file, ['SipariÃ…Å¸ No', 'Tarih', 'Saat', 'Masa', 'Garson', 'Oturma SÃƒÂ¼resi', 'Durum', 'Ãƒâ€“deme Durumu', 'Ãƒâ€“deme YÃƒÂ¶ntemi', 'Toplam Tutar (Ã¢â€šÂº)', 'Notlar'], ';');
             
             foreach ($cafeOrders as $order) {
-                $statusText = match($order->status) {
-                    'pending' => 'Bekliyor',
-                    'preparing' => 'HazÃ„Â±rlanÃ„Â±yor',
-                    'ready' => 'HazÃ„Â±r',
-                    'served' => 'Servis Edildi',
-                    'cancelled' => 'Ã„Â°ptal',
-                    default => 'Bilinmiyor'
-                };
-                
-                $paymentMethodText = match($order->payment_method) {
-                    'cash' => 'Nakit',
-                    'card' => 'Kart',
-                    default => 'BelirtilmemiÃ…Å¸'
-                };
+                switch ($order->status) {
+                    case 'pending':
+                        $statusText = 'Bekliyor';
+                        break;
+                    case 'preparing':
+                        $statusText = 'Hazırlanıyor';
+                        break;
+                    case 'ready':
+                        $statusText = 'Hazır';
+                        break;
+                    case 'served':
+                        $statusText = 'Servis Edildi';
+                        break;
+                    case 'cancelled':
+                        $statusText = 'İptal';
+                        break;
+                    default:
+                        $statusText = 'Bilinmiyor';
+                        break;
+                }
+
+                switch ($order->payment_method) {
+                    case 'cash':
+                        $paymentMethodText = 'Nakit';
+                        break;
+                    case 'card':
+                        $paymentMethodText = 'Kart';
+                        break;
+                    default:
+                        $paymentMethodText = 'Belirtilmemiş';
+                        break;
+                }
                 
                 fputcsv($file, [
                     $order->order_number,
@@ -916,9 +934,20 @@ class ReportController extends Controller
         // Sayfalama ile aktiviteleri al
         $activities = $query->orderBy('created_at', 'desc')
             ->paginate($perPage);
-        
-        // Arama parametrelerini sayfalama linklerine ekle
-        $activities->appends($request->query());
+
+        // Aktiviteler sayfası için geçerli olan sorgu parametrelerini sayfalama linklerine ekle
+        $activitiesQueryParams = array_filter($request->only([
+            'start_date',
+            'end_date',
+            'user_id',
+            'action',
+            'system_type',
+            'product_id',
+            'per_page',
+        ]), function ($value) {
+            return filled($value);
+        });
+        $activities->appends($activitiesQueryParams);
 
         // Ãƒâ€“zet bilgiler iÃƒÂ§in ayrÃ„Â± query (sayfalama olmadan)
         $summaryQuery = UserActivity::byDateRange($startDate, $endDate);
@@ -974,8 +1003,12 @@ class ReportController extends Controller
         $endDate = $request->end_date ? Carbon::parse($request->end_date)->endOfDay() : Carbon::now()->endOfMonth();
         $userId = $request->user_id;
         $productId = $request->product_id;
-        $perPage = $request->get('stats_per_page', 20);
-        
+        $statsPerPage = (int) $request->get('stats_per_page', 20);
+        $allowedPerPage = [10, 20, 50, 100];
+        if (!in_array($statsPerPage, $allowedPerPage, true)) {
+            $statsPerPage = 20;
+        }
+
         // Garson bazında ürün sipariş istatistikleri
         $waiterProductStats = DB::table('cafe_order_items')
             ->join('cafe_orders', 'cafe_order_items.cafe_order_id', '=', 'cafe_orders.id')
@@ -1002,10 +1035,20 @@ class ReportController extends Controller
             ->groupBy('users.id', 'users.name', 'products.id', 'products.name')
             ->orderBy('users.name')
             ->orderBy('total_quantity', 'desc')
-            ->paginate($perPage, ['*'], 'stats_page');
-        
-        // Sayfalama parametrelerini ekle
-        $waiterProductStats->appends($request->except('stats_page'));
+            ->paginate($statsPerPage, ['*'], 'stats_page');
+
+        // İstatistik tablosu sayfalama linklerine filtre ve sayfa başı parametrelerini ekle
+        $statsQueryParams = array_filter($request->only([
+            'start_date',
+            'end_date',
+            'user_id',
+            'product_id',
+            'system_type',
+            'stats_per_page',
+        ]), function ($value) {
+            return filled($value);
+        });
+        $waiterProductStats->appends($statsQueryParams);
         
         // Ürün listesi (filtre için)
         $products = \App\Models\Product::where('is_active', true)
@@ -1122,12 +1165,18 @@ class ReportController extends Controller
             ];
         });
 
-        // Sistem tÃƒÂ¼rÃƒÂ¼ne gÃƒÂ¶re dosya adÃ„Â±
-        $systemTypeText = match($systemType) {
-            'stock' => 'stok_sistemi',
-            'cafe' => 'kafe_sistemi',
-            default => 'kullanici'
-        };
+        // Sistem türüne göre dosya adı
+        switch ($systemType) {
+            case 'stock':
+                $systemTypeText = 'stok_sistemi';
+                break;
+            case 'cafe':
+                $systemTypeText = 'kafe_sistemi';
+                break;
+            default:
+                $systemTypeText = 'kullanici';
+                break;
+        }
 
         // CSV formatÃ„Â±nda Excel dosyasÃ„Â± oluÃ…Å¸tur
         $filename = $systemTypeText . '_aktiviteleri_' . $startDate->format('Y-m-d') . '_' . $endDate->format('Y-m-d') . '.csv';
@@ -1147,11 +1196,11 @@ class ReportController extends Controller
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             
             // BaÃ…Å¸lÃ„Â±k bilgileri
-            $systemTypeText = match($systemType) {
-                'stock' => 'STOK SÃ„Â°STEMÃ„Â° AKTÃ„Â°VÃ„Â°TELERÃ„Â°',
-                'cafe' => 'KAFE SÃ„Â°STEMÃ„Â° AKTÃ„Â°VÃ„Â°TELERÃ„Â°',
-                default => 'KULLANICI AKTÃ„Â°VÃ„Â°TELERÃ„Â°'
-            };
+            switch ($systemType) {
+            case 'stock': $systemTypeText = 'stok_sistemi'; break;
+            case 'cafe': $systemTypeText = 'kafe_sistemi'; break;
+            default: $systemTypeText = 'kullanici'; break;
+        }
             
             fputcsv($file, [$systemTypeText], ';');
             fputcsv($file, ['Tarih AralÃ„Â±Ã„Å¸Ã„Â±: ' . $startDate->format('d.m.Y') . ' - ' . $endDate->format('d.m.Y')], ';');
@@ -1164,12 +1213,12 @@ class ReportController extends Controller
             }
             
             if ($action) {
-                $actionText = match($action) {
-                    'create' => 'OluÃ…Å¸turma',
-                    'update' => 'GÃƒÂ¼ncelleme',
-                    'delete' => 'Silme',
-                    default => 'Bilinmiyor'
-                };
+                switch ($action) {
+            case 'create': $actionText = 'Oluşturma'; break;
+            case 'update': $actionText = 'Güncelleme'; break;
+            case 'delete': $actionText = 'Silme'; break;
+            default: $actionText = 'Bilinmiyor'; break;
+        }
                 fputcsv($file, ['Ã„Â°Ã…Å¸lem TÃƒÂ¼rÃƒÂ¼: ' . $actionText], ';');
             } else {
                 fputcsv($file, ['Ã„Â°Ã…Å¸lem TÃƒÂ¼rÃƒÂ¼: TÃƒÂ¼m Ã„Â°Ã…Å¸lemler'], ';');
@@ -1210,12 +1259,12 @@ class ReportController extends Controller
             fputcsv($file, ['Tarih', 'Saat', 'KullanÃ„Â±cÃ„Â±', 'E-posta', 'Ã„Â°Ã…Å¸lem', 'AÃƒÂ§Ã„Â±klama', 'IP Adresi', 'Cihaz TÃƒÂ¼rÃƒÂ¼', 'TarayÃ„Â±cÃ„Â±', 'Platform'], ';');
             
             foreach ($activities as $activity) {
-                $actionText = match($activity->action) {
-                    'create' => 'OluÃ…Å¸turma',
-                    'update' => 'GÃƒÂ¼ncelleme',
-                    'delete' => 'Silme',
-                    default => 'Bilinmiyor'
-                };
+                switch ($activity->action) {
+            case 'create': $actionText = 'Oluşturma'; break;
+            case 'update': $actionText = 'Güncelleme'; break;
+            case 'delete': $actionText = 'Silme'; break;
+            default: $actionText = 'Bilinmiyor'; break;
+        }
                 
                 fputcsv($file, [
                     $activity->created_at->format('d.m.Y'),
@@ -1588,12 +1637,11 @@ class ReportController extends Controller
             
             foreach ($userSummary as $user) {
                 $cashTypeText = $user->cash_type === 'stock' ? 'Stok KasasÃ„Â±' : 'Kafe KasasÃ„Â±';
-                $transactionTypeText = match($user->transaction_type) {
-                    'income' => 'Gelir',
-                    'expense' => 'Gider',
-                    'withdrawal' => 'Para Ãƒâ€¡ekme',
-                    default => 'Bilinmiyor'
-                };
+                switch ($user->transaction_type) {
+            case 'income': $transactionTypeText = 'Gelir'; break;
+            case 'expense': $transactionTypeText = 'Gider'; break;
+            default: $transactionTypeText = 'Bilinmiyor'; break;
+        }
                 
                 fputcsv($file, [
                     $user->user->name ?? 'Bilinmiyor',
@@ -1612,12 +1660,11 @@ class ReportController extends Controller
             
             foreach ($transactions as $transaction) {
                 $cashTypeText = $transaction->cash_type === 'stock' ? 'Stok KasasÃ„Â±' : 'Kafe KasasÃ„Â±';
-                $transactionTypeText = match($transaction->transaction_type) {
-                    'income' => 'Gelir',
-                    'expense' => 'Gider',
-                    'withdrawal' => 'Para Ãƒâ€¡ekme',
-                    default => 'Bilinmiyor'
-                };
+                switch ($transaction->transaction_type) {
+            case 'income': $transactionTypeText = 'Gelir'; break;
+            case 'expense': $transactionTypeText = 'Gider'; break;
+            default: $transactionTypeText = 'Bilinmiyor'; break;
+        }
                 
                 fputcsv($file, [
                     $transaction->created_at->format('d.m.Y'),
