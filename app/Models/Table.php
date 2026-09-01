@@ -30,27 +30,40 @@ class Table extends Model
 
     public function getStatusTextAttribute()
     {
-        return match($this->status) {
-            self::STATUS_AVAILABLE => 'Musait',
-            self::STATUS_OCCUPIED => 'Dolu',
-            self::STATUS_RESERVED => 'Rezerve',
-            self::STATUS_CLEANING => 'Temizleniyor',
-            self::STATUS_CLOSED => 'Kapalı',
-            default => 'Bilinmiyor'
-        };
+        switch ($this->status) {
+            case self::STATUS_AVAILABLE:
+                return 'Müsait';
+            case self::STATUS_OCCUPIED:
+                return 'Dolu';
+            case self::STATUS_RESERVED:
+                return 'Rezerve';
+            case self::STATUS_CLEANING:
+                return 'Temizleniyor';
+            case self::STATUS_CLOSED:
+                return 'Kapalı';
+            default:
+                return 'Bilinmiyor';
+        }
     }
 
     public function getStatusColorAttribute()
     {
-        return match($this->status) {
-            self::STATUS_AVAILABLE => 'success',
-            self::STATUS_OCCUPIED => 'danger',
-            self::STATUS_RESERVED => 'warning',
-            self::STATUS_CLEANING => 'info',
-            self::STATUS_CLOSED => 'dark',
-            default => 'secondary'
-        };
+        switch ($this->status) {
+            case self::STATUS_AVAILABLE:
+                return 'success';
+            case self::STATUS_OCCUPIED:
+                return 'danger';
+            case self::STATUS_RESERVED:
+                return 'warning';
+            case self::STATUS_CLEANING:
+                return 'info';
+            case self::STATUS_CLOSED:
+                return 'dark';
+            default:
+                return 'secondary';
+        }
     }
+
 
     public function cafeOrders()
     {
